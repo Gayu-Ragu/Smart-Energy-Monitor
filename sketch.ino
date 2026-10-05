@@ -2,16 +2,23 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "secrets.h"
+
+#define BLYNK_PRINT Serial
+#include <WiFi.h>
+#include<BlynkSimpleEsp32.h>
+BlynkTimer timer;
 
 uint8_t PIN_Voltage_Sense = 34;
 uint8_t PIN_Current_Sense = 35;
 float ADC_MAX = 4095.0f; //float forces float division in conversion
 float V_full_scale = 300.0f ;
 float I_full_scale = 12.0f ;
+
 unsigned long Sample_period_ms = 500;
-unsigned long lastSampleMS = 0;
 unsigned long DISPLAY_PERIOD_MS = 1000;
-unsigned long lastDisplayMs = 0;
+unsigned long BLYNK_PERIOD_MS=2000;
+unsigned long WIFI_TIMEOUT_MS=15000;
 
 int screen_width = 128;
 int screen_height = 64;
@@ -68,8 +75,38 @@ void displayTask()
   display.printf("I: %6.1f I\n",I);
   display.printf("P: %6.1f W\n",power);
 
+  display.setCursor(0, 56);
+  display.print(Blynk.connected() ? "Cloud: online" : "Cloud: offline");
+
   display.display();
 }
+
+void connectWiFi() {
+  Serial.printf("Connecting to Wi-Fi '%s'", WIFI_SSID);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS, WIFI_CHANNEL);
+
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_TIMEOUT_MS) {
+    delay(250);
+    Serial.print('.');
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("\nWi-Fi connected, IP: %s\n", WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("\nWi-Fi not available - running in local-only mode");
+  }
+}
+
+void blynkTask() {
+  if (!Blynk.connected()) return;
+
+  Blynk.virtualWrite(V0, V);
+  Blynk.virtualWrite(V1, I);
+  Blynk.virtualWrite(V2, power);
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -87,18 +124,24 @@ void setup()
     display.println("Booting...");
     display.display();
   }
+  connectWiFi();
+
+  Blynk.config(BLYNK_AUTH_TOKEN);
+if (WiFi.status() == WL_CONNECTED) {
+  Blynk.connect(5000);   // try for up to 5 s
+}
+
+timer.setInterval(Sample_period_ms,  Task);
+timer.setInterval(DISPLAY_PERIOD_MS, displayTask);
+timer.setInterval(BLYNK_PERIOD_MS,   blynkTask);
+
 }
 
 void loop()
 {
-  unsigned long now = millis();
-  if (now - lastSampleMS >= Sample_period_ms)
-  {
-    lastSampleMS = now;
-    Task();
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Blynk.run();
   }
-    if (now - lastDisplayMs >= DISPLAY_PERIOD_MS) {
-    lastDisplayMs = now;
-    displayTask();
-  }
+  timer.run();
 }
