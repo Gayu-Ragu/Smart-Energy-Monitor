@@ -10,15 +10,18 @@ float V_full_scale = 300.0f ;
 float I_full_scale = 12.0f ;
 unsigned long Sample_period_ms = 500;
 unsigned long lastSampleMS = 0;
+unsigned long DISPLAY_PERIOD_MS = 1000;
+unsigned long lastDisplayMs = 0;
+
 int screen_width = 128;
-int screen_heigth = 64;
+int screen_height = 64;
 uint8_t oled_addr = 0X3C; // I2C address for almost all SSD1306 module
 
 float V;
 float I;
 float power;
 
-Adafruit_SSD1306 display (screen_width, screen_height. &Wire, -1);
+Adafruit_SSD1306 display (screen_width, screen_height, &Wire, -1);
 // &Wire default bus on GPIO21 and 22 and -1 no extra reset pin.
 bool oledok = false;
 
@@ -48,7 +51,7 @@ void Task()
 
   Serial.printf("raw voltage = %4d, raw Current = %4d, Voltage = %6.1f V Current=%6.1f I Power=%6.1f W\n", raw_V, raw_I, V, I, power);
 }
-void display()
+void displayTask()
 {
   if(!oledok) return;
 
@@ -70,8 +73,20 @@ void display()
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("== Stage1: sensore => serial ==");
+  Serial.println("== Stage2: sensore => serial + OLED ==");
   analogReadResolution(12);
+
+  oledok = display.begin(SSD1306_SWITCHCAPVCC, oled_addr);
+  if (!oledok) {
+    Serial.println("OLED not found - continuing without display");
+  } else {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Booting...");
+    display.display();
+  }
 }
 
 void loop()
@@ -81,5 +96,9 @@ void loop()
   {
     lastSampleMS = now;
     Task();
+  }
+    if (now - lastDisplayMs >= DISPLAY_PERIOD_MS) {
+    lastDisplayMs = now;
+    displayTask();
   }
 }
