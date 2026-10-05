@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "author": "user",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "potV", "top": -130, "left": -170, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "potI", "top": -130, "left": -60, "attrs": {} },
+    { "type": "board-ssd1306", "id": "oled", "top": 40, "left": 200, "attrs": { "i2cAddress": "0x3c" } },
+    { "type": "wokwi-led", "id": "ledWarn", "top": 160, "left": 210, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 230, "left": 190, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-pushbutton", "id": "btnReset", "top": 190, "left": -170, "attrs": { "color": "green" } }
+  ],
+  "connections": [
+    [ "potV:VCC", "esp:3V3", "red", [] ],
+    [ "potV:GND", "esp:GND.1", "black", [] ],
+    [ "potV:SIG", "esp:D34", "orange", [] ],
+    [ "potI:VCC", "esp:3V3", "red", [] ],
+    [ "potI:GND", "esp:GND.1", "black", [] ],
+    [ "potI:SIG", "esp:D35", "yellow", [] ],
+    [ "oled:VCC", "esp:3V3", "red", [] ],
+    [ "oled:GND", "esp:GND.2", "black", [] ],
+    [ "oled:SDA", "esp:D21", "blue", [] ],
+    [ "oled:SCL", "esp:D22", "purple", [] ],
+    [ "ledWarn:A", "esp:D26", "green", [] ],
+    [ "ledWarn:C", "r1:1", "black", [] ],
+    [ "r1:2", "esp:GND.2", "black", [] ],
+    [ "btnReset:1.l", "esp:D27", "green", [] ],
+    [ "btnReset:2.l", "esp:GND.1", "black", [] ]
+  ],
+  "dependencies": {}
+}
